@@ -1,0 +1,32 @@
+#contextmenu {
+    width: 200px;
+    #box-shadow: 0 4px 5px 3px rgba(0, 0, 0, 0.2);
+    position: relative;
+    display: none;
+    background: white;
+}
+
+.menu-options {
+    list-style: none;
+    padding: 10px 0;
+}
+
+.menu-option {
+    display: list-item;
+    font-family: sans-serif;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    padding: 5px 10px 5px 10px !important;
+    cursor: pointer;
+    text-decoration: none black solid !important;
+}
+
+.menu-option:hover {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+#lq {
+    display: none;
+}
+
+
