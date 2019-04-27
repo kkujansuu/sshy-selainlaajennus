@@ -150,14 +150,14 @@ function buildCitation() {
         $.each($(td).contents(), function(i,x) {
             if (i == 1) viite += $(x).text();         // seurakunta
             if (i == 3) viite += " - " + $(x).text() + " (" + lahde + ")"; // kirja + lahde
-            if (i == 4) viite += $(x).text();         // kuvanumero
-            if (i == 5) {
-                viite += $(x).text();         // kuvaus
+            if (i == 4) viite += $(x).text() + "sivu ???";         // kuvanumero
+            if (i == 5 && $(x).text().trim()) {
+                viite += ": " + $(x).text().trim();         // kuvaus
             }
         });
     }
     else {
-        viite = $("title").text().replace(/\s+/," ");
+        viite = $("title").text().replace(/\s+/," ") + ", sivu ???";
     }
     var date = new Date();
     var aika = date.getDate() + "." + (date.getMonth()+1) + "." + (1900+date.getYear());
