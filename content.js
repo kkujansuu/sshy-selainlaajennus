@@ -169,70 +169,86 @@ function buildCitation() {
 }
 
 function run(addon_options) {
-    setTitle();
+    if (addon_options.set_title) setTitle();
 
-    $("a[target=kuva]").each(function(i,e) {
-        $(e).attr("target","_blank");
-    });
-
+	if (addon_options.new_tab) {
+	    $("a[target=kuva]").each(function(i,e) {
+	        $(e).attr("target","_blank");
+	    });
+	}
+	
     if (imagepage()) {
 
-        restorePosition();
+		if (addon_options.retain_position) restorePosition();
 
-        var viite = buildCitation();
-        
-        var a = $("a.karajat");
-        $("a#citation").hide();
-        var link = $("<a href=# id=citation>(lähdeviite)</a>");
-        a.after(link).after(" ");
-        link.click(function() {lahdeviite(viite)});
-        
+		if (addon_options.generate_citation) {
+	        var viite = buildCitation();
+	        
+	        var a = $("a.karajat");
+	        $("a#citation").hide();
+	        var link = $("<a href=# id=citation>(lähdeviite)</a>");
+	        a.after(link).after(" ");
+	        link.click(function() {lahdeviite(viite)});
+		}
+		        
         $("body").append("<div id='citationwindow' class='citationwindow' title='Lähdeviite'><textarea id='citationtext' rows='10' cols='28'></textarea></div>");
         $( "div.citationwindow" ).hide();
             
         $("head").append("<link type='text/css' rel='stylesheet' href='//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css'>");
         
-        $(img_selector).next().css("position","fixed").css("bottom","0px");
-        $(img_selector).wrap("<div style='position:fixed;overflow:hidden;left:0px;top:45px;height:2000px;width:2000px'></div>");
-        $(img_selector).attr('height', window.innerHeight-90 );
-        //$(img_selector).removeAttr('width');
-        //$(img_selector).attr('width','auto');
-        $(img_selector).attr('width','');
-        $(img_selector).draggable({scroll: false});
 
+        if (addon_options.mousemove) {
+	        $(img_selector).next().css("position","fixed").css("bottom","0px");
+	        $(img_selector).wrap("<div style='position:fixed;overflow:hidden;left:0px;top:45px;height:2000px;width:2000px'></div>");
+	        $(img_selector).attr('height', window.innerHeight-90 );
+	        $(img_selector).attr('width','');
 
-        var options = $("<ul class=menu-options></ul>");
+	        $(img_selector).get(0).removeAttribute("onclick");
+	        $(img_selector).draggable({scroll: false});
+		}
+		
+        var menu_options = $("<ul class=menu-options></ul>");
 
-        var opt = $('<li class="menu-option">Suurenna</li>');
-        options.append(opt);
-        opt.click(zoom_in);
-
-        var opt = $('<li class="menu-option">Pienennä</li>');
-        options.append(opt);
-        opt.click(zoom_out);
-
-        var opt = $('<li class="menu-option">Käännä vastapäivään</li>');
-        options.append(opt);
-        opt.click(function() {angle -= 90;rotate(angle)});
-
-        var opt = $('<li class="menu-option">Käännä myötäpäivään</li>');
-        options.append(opt);
-        opt.click(function() {angle += 90;rotate(angle)});
-
+		if (addon_options.menuzoom) {
+	        var opt = $('<li class="menu-option">Suurenna</li>');
+	        menu_options.append(opt);
+	        opt.click(zoom_in);
+	
+	        var opt = $('<li class="menu-option">Pienennä</li>');
+	        menu_options.append(opt);
+	        opt.click(zoom_out);
+		}
+		
+		if (addon_options.rotation) {
+	        var opt = $('<li class="menu-option">Käännä vastapäivään</li>');
+	        menu_options.append(opt);
+	        opt.click(function() {angle -= 90;rotate(angle)});
+	
+	        var opt = $('<li class="menu-option">Käännä myötäpäivään</li>');
+	        menu_options.append(opt);
+	        opt.click(function() {angle += 90;rotate(angle)});
+		}
+		
         var opt = $('<li class="menu-option">Palauta alkuperäinen kuva</li>');
-        options.append(opt);
+        menu_options.append(opt);
         opt.click(restore);
 
-        var opt = $('<li class="menu-option">Lähdeviite</li>');
-        options.append(opt);
-        opt.click(function() {lahdeviite(viite)});
-
-        var fname = "SSHY - " + $("title").text().replace(">","-").replace(":","-");
-        var opt = $('<a class="menu-option" href=' + $("img").attr("src") + ' download="' + fname + '.jpg">Lataa kuva</a>');
-        options.append(opt);
-
+		if (addon_options.generate_citation) {
+	        var opt = $('<li class="menu-option">Lähdeviite</li>');
+	        menu_options.append(opt);
+	        opt.click(function() {lahdeviite(viite)});
+		}
+		
+		if (addon_options.download_image) {
+	        var title = $("title");
+		    if (title.substr(0,7) == "SSHY - ") title = title.substr(7);
+	        var fname = "SSHY - " + $("title").text().replace(">","-").replace(":","-");
+	        var opt = $('<a class="menu-option" href=' + $("img").attr("src") + ' download="' + fname + '.jpg">Lataa kuva</a>');
+	        menu_options.append(opt);
+		}
+		
         var contextmenu = $('<div id="contextmenu" style="position:absolute"></div>');
-        contextmenu.append(options);
+        contextmenu.append(menu_options);
         $(img_selector).parent().append(contextmenu);
         var menu = document.getElementById("contextmenu");
         menu = contextmenu.get(0);
@@ -254,26 +270,32 @@ function run(addon_options) {
             }
         });
 
-        window.addEventListener("wheel",function(e){
-            if (e.deltaY < 0) 
-                zoom_in(e);
-            else
-                zoom_out(e);
-        });
-
-        // $(img_selector).get(0)
-        window.addEventListener("keydown", function(e) {
-            // Ctrl+, Ctrl-
-            if (e.ctrlKey && e.keyCode == 107) {
-                e.preventDefault();
-                zoom_in();
-            }
-            if (e.ctrlKey && e.keyCode == 109) {
-                e.preventDefault();
-                zoom_out();
-            }
-        } );
-        
+		if (addon_options.mousezoom) {
+	        $(img_selector).next().css("position","fixed").css("bottom","0px");
+	        $(img_selector).wrap("<div style='position:fixed;overflow:hidden;left:0px;top:45px;height:2000px;width:2000px'></div>");
+	        $(img_selector).attr('height', window.innerHeight-90 );
+	        $(img_selector).attr('width','');
+	        window.addEventListener("wheel",function(e){
+	            if (e.deltaY < 0) 
+	                zoom_in(e);
+	            else
+	                zoom_out(e);
+	        });
+		}
+		
+		if (addon_options.keyboardzoom) {
+	        window.addEventListener("keydown", function(e) {
+	            // Ctrl+, Ctrl-
+	            if (e.ctrlKey && e.keyCode == 107) {
+	                e.preventDefault();
+	                zoom_in();
+	            }
+	            if (e.ctrlKey && e.keyCode == 109) {
+	                e.preventDefault();
+	                zoom_out();
+	            }
+	        } );
+		}        
         
         $("a[accesskey]").click(function() {
             savePosition();

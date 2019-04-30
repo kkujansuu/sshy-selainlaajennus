@@ -1,7 +1,7 @@
 {
     "name": "SSHY-selainlaajennus", 
     "description": "Käyttöliittymäparannuksia SSHY:n sivuille", 
-    "version": "1.0.1", 
+    "version": "1.1", 
     "author": "Kari Kujansuu <kari.kujansuu@gmail.com>",
     "content_scripts": [
         {
@@ -36,5 +36,9 @@
     "manifest_version": 2,
     "permissions": [
         "storage"
-     ]
+     ],
+    "options_ui": {
+        "page": "options.html"
+    }
+     
 }
