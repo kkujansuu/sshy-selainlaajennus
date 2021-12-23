@@ -9,10 +9,17 @@ function log(msg) {
 var angle = 0;
 var img;
 var img_selector;
-if (location.href.indexOf("jasenille") > 0)
+var	is_member = false;
+var	is_public = false;
+
+if (location.href.indexOf("jasenille") > 0) {
+	is_member = true;
     img_selector = "#bookimage";
-else
+} else {
+	is_public = true;
     img_selector = "img";
+}
+    
 img = $(img_selector);
     
 function savePosition() {
@@ -28,7 +35,13 @@ function savePosition() {
 
 function restorePosition() {
     var position_string = sessionStorage.getItem("position");
-    if (!position_string) return;
+    if (!position_string) {
+	    $(img_selector).css("top",0);
+	    $(img_selector).css("left",0);
+	    $(img_selector).css("width",window.innerWidth-30);
+	    $(img_selector).css("height","auto");
+	    return;
+    }
     var position = JSON.parse(position_string);
     $(img_selector).css("top",position.top);
     $(img_selector).css("left",position.left);
@@ -163,12 +176,15 @@ function buildCitation() {
     var aika = date.getDate() + "." + (date.getMonth()+1) + "." + (1900+date.getYear());
     var url = location.href.replace("#","");
     url = url.replace("digiarkisto.org","sukuhistoria.fi");
+    var i = url.indexOf("&fbclid=");  // poista facebook-seuranta
+    if (i > 0) url = url.substr(0,i);
     viite += "; SSHY: " + url + " / Viitattu " + aika;
     viite = viite.replace(/\n/,"");
     return viite;
 }
 
 function run(addon_options) {
+    console.log('Settings:'+JSON.stringify(addon_options));
     if (addon_options.set_title) setTitle();
 
 	if (addon_options.new_tab) {
@@ -179,32 +195,46 @@ function run(addon_options) {
 	
     if (imagepage()) {
 
-		if (addon_options.retain_position) restorePosition();
-
+		if (addon_options.retain_position) 
+			restorePosition();
+		else {
+		    $(img_selector).css("top",0);
+		    $(img_selector).css("left",0);
+		    $(img_selector).css("width",window.innerWidth-30);
+		    $(img_selector).css("height","auto");
+		}
+		
 		if (addon_options.generate_citation) {
 	        var viite = buildCitation();
 	        
 	        var a = $("a.karajat");
 	        $("a#citation").hide();
 	        var link = $("<a href=# id=citation>(lähdeviite)</a>");
-	        a.after(link).after(" ");
+	        //a.after(link).after(" ");
 	        link.click(function() {lahdeviite(viite)});
 		}
 		        
         $("body").append("<div id='citationwindow' class='citationwindow' title='Lähdeviite'><textarea id='citationtext' rows='10' cols='28'></textarea></div>");
         $( "div.citationwindow" ).hide();
             
-        $("head").append("<link type='text/css' rel='stylesheet' href='//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css'>");
+        //$("head").append("<link type='text/css' rel='stylesheet' href='//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css'>");
         
 
         if (addon_options.mousemove) {
 	        $(img_selector).next().css("position","fixed").css("bottom","0px");
-	        $(img_selector).wrap("<div style='position:fixed;overflow:hidden;left:0px;top:45px;height:2000px;width:2000px'></div>");
+	        $(img_selector).wrap("<div style='position:fixed;overflow:hidden;left:0px;top:45px;height:3000px;width:3000px;'></div>");
 	        $(img_selector).attr('height', window.innerHeight-90 );
 	        $(img_selector).attr('width','');
+		    $("table.paperi").css("width","100%");
 
-	        $(img_selector).get(0).removeAttribute("onclick");
+	        $(img_selector).removeAttr("onclick");
+	        $(img_selector).prop("onclick",null).unbind("click");
 	        $(img_selector).draggable({scroll: false});
+
+	        $("input[type=button]").click(function() {
+	            $(img_selector).draggable({scroll: false});
+	        });
+
 		}
 		
         var menu_options = $("<ul class=menu-options></ul>");
@@ -240,41 +270,44 @@ function run(addon_options) {
 		}
 		
 		if (addon_options.download_image) {
-	        var title = $("title");
+	        var title = $("title").text();
 		    if (title.substr(0,7) == "SSHY - ") title = title.substr(7);
 	        var fname = "SSHY - " + $("title").text().replace(">","-").replace(":","-");
 	        var opt = $('<a class="menu-option" href=' + $("img").attr("src") + ' download="' + fname + '.jpg">Lataa kuva</a>');
 	        menu_options.append(opt);
 		}
 		
-        var contextmenu = $('<div id="contextmenu" style="position:absolute"></div>');
-        contextmenu.append(menu_options);
-        $(img_selector).parent().append(contextmenu);
-        var menu = document.getElementById("contextmenu");
-        menu = contextmenu.get(0);
-      
-        function contextmenuListener(e) {
-            e.preventDefault();
-            menu.style.left = e.pageX + "px";
-            menu.style.top = (e.pageY-90) + "px";
-            menu.style.display = "block";
-            return false;
-        }
+		if (addon_options.contextmenu) {
+	        var contextmenu = $('<div id="contextmenu" style="position:absolute"></div>');
+	        contextmenu.append(menu_options);
+	        $(img_selector).parent().append(contextmenu);
+	        var menu = document.getElementById("contextmenu");
+	        menu = contextmenu.get(0);
 
-        $(img_selector).get(0).addEventListener("contextmenu", contextmenuListener );
+	        function contextmenuListener(e) {
+	            e.preventDefault();
+	            menu.style.left = e.pageX + "px";
+	            menu.style.top = (e.pageY-90) + "px";
+	            menu.style.display = "block";
+	            return false;
+	        }
 
-        window.addEventListener("click", e => {
-            if (e.which == 1) {
-                menu.style.display = "none";
-                // $( "#citationwindow" ).hide();
-            }
-        });
+	        $(img_selector).get(0).addEventListener("contextmenu", contextmenuListener );
+		
+	        window.addEventListener("click", e => {
+	            if (e.which == 1) {
+	                menu.style.display = "none";
+	            }
+	        });
+		}
 
 		if (addon_options.mousezoom) {
 	        $(img_selector).next().css("position","fixed").css("bottom","0px");
-	        $(img_selector).wrap("<div style='position:fixed;overflow:hidden;left:0px;top:45px;height:2000px;width:2000px'></div>");
+	        $(img_selector).wrap("<div style='position:fixed;overflow:hidden;left:0px;top:45px;height:3000px;width:3000px'></div>");
 	        $(img_selector).attr('height', window.innerHeight-90 );
 	        $(img_selector).attr('width','');
+		    //$("table[height=25]").css("height", "25px !important");
+		    $("table.paperi").css("width","100%");
 	        window.addEventListener("wheel",function(e){
 	            if (e.deltaY < 0) 
 	                zoom_in(e);
@@ -297,23 +330,42 @@ function run(addon_options) {
 	        } );
 		}        
         
-        $("a[accesskey]").click(function() {
-            savePosition();
-        });
-
-        $("a.painike").click(function() {
-            savePosition();
-        });
-        
-        $("input[type=button]").click(function() {
-            $(img_selector).draggable({scroll: false});
-        });
+		if (addon_options.retain_position) {
+	        $("a[accesskey]").click(function() {
+	            savePosition();
+	        });
+	
+	        $("a.painike").click(function() {
+	            savePosition();
+	        });
+		}
+		        
     } // imagepage
 }
 
 $( function () {
-    chrome.storage.local.get(null, function(addon_options) {
-        run(addon_options);
+	var key;
+	if (is_public) key = "public";
+	if (is_member) key = "member";
+//	chrome.storage.local.clear();
+    chrome.storage.local.get([key], function(addon_options) {
+        var options = addon_options[key];
+        if (options == undefined) {
+            options = {};
+            options.contextmenu = true;
+            options.generate_citation = true;
+            options.set_title = true;
+            options.new_tab = true;
+            options.mousemove = true;
+            options.mousezoom = true;
+            options.menuzoom = true;
+            options.keyboardzoom = true;
+            options.rotation = true;
+            options.retain_position = true;
+            options.download_image = true;
+        }
+        run(options);
     });
 });
+
 
